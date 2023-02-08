@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Client</title>
+</head>
+<body>
+   <h1 id="title">WebSocket Client</h1>
+   <button id="connect">Connect</button>
+   <button id="disconnect">Disconnect</button>
+
+   <hr>
+
+   <table border="0">
+    <tbody>
+        <tr>
+            <td>UserId:</td>
+            <td colspan="2"><input type="userIdField" id="userIdField"></input></td>
+        </tr>
+
+        <tr>
+            <td>Message:</td>
+            <td> <input type="text" id="messageField"></input> </td>
+            <td>
+                <button id="send">Send</button>
+            </td>
+        </tr>
+
+       <tr>
+        <td>Log:</td>
+        <td colspan="2">
+            <textarea id="logArea" rows="9" cols="40"></textarea>
+        </td>
+       </tr>
+    </table>
+
+   <script src="socket.js"></script>
+   <script src="ui-utils.js"></script>
+   <script src="app.js"></script>
+</body>
+</html>
