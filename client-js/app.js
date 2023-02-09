@@ -35,7 +35,7 @@ function setConnected(isConnected) {
             alert('Unable to continue. No userId set');
             return;
         }
-        sock.connect();
+        sock.connect(setConnected, gotData);
     });
 
     const btnDisconnect = document.getElementById('disconnect');
