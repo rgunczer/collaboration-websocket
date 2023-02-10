@@ -1,6 +1,5 @@
 package com.home.Collaborator;
 
-import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONObject;
@@ -9,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 
@@ -35,8 +35,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
         sessions.values().forEach(session -> {
             try {
                 session.sendMessage(new TextMessage(jsonObject.toString()));
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
         });
     }
@@ -44,7 +44,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         System.out.println("new connection: [" + session.getId() + "]");
-        sessions.put(session.getId(), session);
+
+        var concurrentSession = new ConcurrentWebSocketSessionDecorator(session, 1000, 1024);
+        sessions.put(session.getId(), concurrentSession);
     }
 
     @Override
