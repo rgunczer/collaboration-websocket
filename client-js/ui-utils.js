@@ -30,3 +30,13 @@ function setTitle(text) {
     const el = getTitleEl();
     el.innerText = text;
 }
+
+function getCursor() {
+    const el = document.getElementById('cursor');
+    return el;
+}
+
+function getCursorLabel() {
+    const el = document.getElementById('cursor-label');
+    return el;
+}

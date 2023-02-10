@@ -2,7 +2,7 @@ const socket = function(url) {
     let ws = null;
     let listenerCallbackFn = (ev) => { console.warn('got stocket event no listener registered')};
 
-    function connect(onConnectionEventCallbackFn, listenerFn) {
+    function connect(userId, color, onConnectionEventCallbackFn, listenerFn) {
         console.log(`connecting to [${url}]...`);
 
         listenerCallbackFn = listenerFn;
@@ -14,7 +14,8 @@ const socket = function(url) {
 
         ws.onopen = (event) => {
             onConnectionEventCallbackFn(true);
-            listenerCallbackFn({ user: getUserFieldValue(), data: event.data });
+            listenerCallbackFn(event.data);
+            send({ type: 'init', color });
         }
 
         ws.onclose = (event) => {
@@ -33,7 +34,7 @@ const socket = function(url) {
         if (ws == null) {
             return;
         }
-        const str = JSON.stringify({ user: getUserFieldValue(), ...obj });
+        const str = JSON.stringify({ name: getUserFieldValue(), ...obj });
         ws.send(str);
     }
 
