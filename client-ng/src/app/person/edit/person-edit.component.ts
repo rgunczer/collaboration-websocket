@@ -56,7 +56,7 @@ export class PersonEditComponent implements OnInit {
 
           fromEvent<MouseEvent>(document, 'mousemove')
             .pipe(
-              filter(() => this.ws.status === 'connected'),
+              filter(() => this.ws.isConnected),
               sampleTime(100),
               takeUntil(this.destroy$)
             )
@@ -73,7 +73,7 @@ export class PersonEditComponent implements OnInit {
             });
 
 
-          if (this.ws.status === 'connected') {
+          if (this.ws.isConnected) {
             this.ws.sendMessage(`/app/editing/${this.entityId}/enter`, {
               type: 'person',
               entity_id: this.id,
@@ -92,7 +92,7 @@ export class PersonEditComponent implements OnInit {
               ]
             });
 
-            this.ws.stompClient?.subscribe(`/topic/editing/${this.entityId}/enter`, (message:any) => {
+            this.ws.client?.subscribe(`/topic/editing/${this.entityId}/enter`, (message:any) => {
               if (message.body) {
                 const msg = JSON.parse(message.body);
 
@@ -107,7 +107,7 @@ export class PersonEditComponent implements OnInit {
               }
             });
 
-            this.ws.stompClient?.subscribe(`/topic/editing/${this.entityId}/mouse-moving`, (message:any) => {
+            this.ws.client?.subscribe(`/topic/editing/${this.entityId}/mouse-moving`, (message:any) => {
               if (message.body) {
                 const msg = JSON.parse(message.body);
 
@@ -124,7 +124,7 @@ export class PersonEditComponent implements OnInit {
               }
             });
 
-            this.ws.stompClient?.subscribe(`/topic/editing/${this.entityId}/field`, (message: any) => {
+            this.ws.client?.subscribe(`/topic/editing/${this.entityId}/field`, (message: any) => {
               if (message.body) {
                 const msg: FieldAction = JSON.parse(message.body);
 

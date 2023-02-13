@@ -3,6 +3,7 @@ export interface Collaborator {
   nick: string;
   bgColor: string;
   textColor: string;
+  time: Date;
   mouseX: number;
   mouseY: number;
 }
