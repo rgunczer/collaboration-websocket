@@ -1,2 +1,2 @@
 # collaboration-websocket
-Multi user collaboration over websocket Spring Boot
+Multi user collaboration over websocket with Spring Boot using STOMP
