@@ -92,7 +92,7 @@ export class PersonEditComponent implements OnInit {
               ]
             });
 
-            this.ws.stompClient.subscribe(`/topic/editing/${this.entityId}/enter`, (message:any) => {
+            this.ws.stompClient?.subscribe(`/topic/editing/${this.entityId}/enter`, (message:any) => {
               if (message.body) {
                 const msg = JSON.parse(message.body);
 
@@ -107,7 +107,7 @@ export class PersonEditComponent implements OnInit {
               }
             });
 
-            this.ws.stompClient.subscribe(`/topic/editing/${this.entityId}/mouse-moving`, (message:any) => {
+            this.ws.stompClient?.subscribe(`/topic/editing/${this.entityId}/mouse-moving`, (message:any) => {
               if (message.body) {
                 const msg = JSON.parse(message.body);
 
@@ -124,7 +124,7 @@ export class PersonEditComponent implements OnInit {
               }
             });
 
-            this.ws.stompClient.subscribe(`/topic/editing/${this.entityId}/field`, (message: any) => {
+            this.ws.stompClient?.subscribe(`/topic/editing/${this.entityId}/field`, (message: any) => {
               if (message.body) {
                 const msg: FieldAction = JSON.parse(message.body);
 
