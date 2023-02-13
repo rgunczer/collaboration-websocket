@@ -3,14 +3,17 @@ import { calcTextColorFromBgColor } from 'src/utils';
 
 
 @Component({
-  selector: 'app-collaborator',
-  templateUrl: './collaborator.component.html',
-  styleUrls: ['./collaborator.component.scss']
+  selector: 'app-collaborator-pointer',
+  templateUrl: './collaborator-pointer.component.html',
+  styleUrls: ['./collaborator-pointer.component.scss']
 })
-export class CollaboratorComponent implements OnChanges {
+export class CollaboratorPointerComponent implements OnChanges {
   @Input() color = '#0000ff';
-  @Input() label = 'Anonymous';
+  @Input() label = 'Marjory';
   textColor = 'white';
+  @Input() tx = 100;
+  @Input() ty = 20;
+
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['color']) {

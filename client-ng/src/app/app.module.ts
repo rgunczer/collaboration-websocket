@@ -4,10 +4,16 @@ import { FormsModule } from '@angular/forms';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { PersonListComponent } from './person-list/person-list.component';
-import { PersonEditComponent } from './person-edit/person-edit.component';
-import { PointerComponent } from './pointer/pointer.component';
-import { CollaboratorComponent } from './collaborator/collaborator.component';
+
+// person
+import { PersonListComponent } from './person/list/person-list.component';
+import { PersonEditComponent } from './person/edit/person-edit.component';
+
+// collaborator
+import { CollaboratorPointerComponent } from './collaborator/pointer/collaborator-pointer.component';
+import { CollaboratorAvatarComponent } from './collaborator/avatar-global/collaborator-avatar.component';
+import { CollaboratorLocalComponent } from './collaborator/avatar-local/collaborator-local.component';
+import { CollaboratorFieldOwnerComponent } from './collaborator/field-owner/collaborator-field-owner.component';
 
 
 @NgModule({
@@ -15,8 +21,10 @@ import { CollaboratorComponent } from './collaborator/collaborator.component';
     AppComponent,
     PersonListComponent,
     PersonEditComponent,
-    PointerComponent,
-    CollaboratorComponent
+    CollaboratorPointerComponent,
+    CollaboratorAvatarComponent,
+    CollaboratorLocalComponent,
+    CollaboratorFieldOwnerComponent,
   ],
   imports: [
     BrowserModule,

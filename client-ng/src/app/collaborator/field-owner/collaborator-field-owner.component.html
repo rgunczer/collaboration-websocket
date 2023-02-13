@@ -1,0 +1,9 @@
+<div *ngIf="owner;else noOwner" style="display: flex; justify-content: end; margin-bottom: 2px;">
+  <div style="text-align: end; border-radius: 14px 14px 14px 0; padding: 0.2rem 1rem;" [style.backgroundColor]="owner.bgColor" [style.color]="owner.textColor">
+    {{owner.nick}}
+  </div>
+</div>
+
+<ng-template #noOwner>
+  <div>&nbsp;</div>
+</ng-template>

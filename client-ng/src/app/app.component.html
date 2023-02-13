@@ -1,61 +1,30 @@
-<table border="1">
-  <thead>
-    <tr>
-      <td>Nick:</td>
-      <td colspan="2">
-        <input type="text" [(ngModel)]="nickName">
-      </td>
-    </tr>
-    <tr>
-      <td>Color:</td>
-      <td colspan="2">
+<nav class="navbar bg-body-tertiary">
+  <div class="container-fluid">
+    <a class="navbar-brand">Collaborator - UI <b>{{status}}</b></a>
+    <div class="d-flex align-items-center" role="search">
+      <div class="d-flex mx-2 align-items-center">
+        <label>Nick: </label>
+        <input class="form-control me-2" type="text" [(ngModel)]="nickName">
+      </div>
+      <div class="d-flex mx-2 align-items-center">
+        <label>Color: </label>
         <input type="color" [(ngModel)]="nickColor">
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <button type="button" class="btn btn-primary" (click)="onConnect()">Connect</button>
-        <button type="button" class="btn btn-primary" (click)="onDisconnect()">Disconnect</button>
-      </td>
-      <td>
-        Status: <b>{{status}}</b>
-      </td>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>
-        <button type="button" class="btn btn-primary" (click)="onSendMessage()">Send Test Message</button>
-      </td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>
-        Topic name:
-      </td>
-      <td>
-        <input type="text" [(ngModel)]="topicName">
-      </td>
-    </tr>
-  </tbody>
-</table>
+      </div>
+      <button class="btn btn-outline-success" type="button" (click)="onConnect()">Connect</button>
+      <button class="ms-1 btn btn-outline-danger" type="button" (click)="onDisconnect()">Disconnect</button>
+    </div>
+  </div>
+</nav>
 
-<div style="padding-top: 1rem; min-height: 140px;">
-  <p>Collaborators:</p>
+<div class="col">
+  <div style="padding-top: 1rem; min-height: 140px;">
+    <p>Collaborators:</p>
 
-  <ng-container *ngFor="let c of collaborators">
-    <app-collaborator [color]="c.color" [label]="c.nick" />
-  </ng-container>
+    <ng-container *ngFor="let c of collaborators">
+      <app-collaborator-avatar [c]="c" />
+    </ng-container>
 
+  </div>
 </div>
-
-<ng-container *ngFor="let c of collaborators">
-  <app-pointer *ngIf="c.nick !== nickName" [color]="c.color" [label]="c.nick" [tx]="c.mouseX" [ty]="c.mouseY" />
-</ng-container>
-
-
-
-
-
 
 <router-outlet></router-outlet>
