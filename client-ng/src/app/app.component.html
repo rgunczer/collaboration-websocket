@@ -16,15 +16,9 @@
   </div>
 </nav>
 
-<div class="col">
-  <div style="padding-top: 1rem; min-height: 140px;">
-    <p>Collaborators:</p>
-
-    <ng-container *ngFor="let c of collaborators">
-      <app-collaborator-avatar [c]="c" />
-    </ng-container>
-
-  </div>
+<div class="d-flex pt-1 align-items-center bg-" style="min-height: 160px;">
+  <p>Collaborators:</p>
+  <app-collaborator-avatar *ngFor="let c of collaborators" [c]="c" />
 </div>
 
 <router-outlet></router-outlet>

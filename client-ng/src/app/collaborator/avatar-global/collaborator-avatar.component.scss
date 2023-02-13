@@ -1,0 +1,16 @@
+.badge {
+  opacity: 0;
+  animation-name: fadeAndScale;
+  animation-duration: 0.6s;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes fadeAndScale {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
