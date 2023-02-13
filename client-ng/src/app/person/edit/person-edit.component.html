@@ -16,8 +16,7 @@
 </div>
 
 <ng-container *ngFor="let c of collaborators">
-  <app-collaborator-pointer *ngIf="c.nick !== nick" [color]="c.bgColor" [label]="c.nick" [tx]="c.mouseX"
-    [ty]="c.mouseY" />
+  <app-collaborator-pointer *ngIf="c.nick !== nick" [c]="c" [tx]="c.mouseX" [ty]="c.mouseY" />
 </ng-container>
 
 <table border="1">
