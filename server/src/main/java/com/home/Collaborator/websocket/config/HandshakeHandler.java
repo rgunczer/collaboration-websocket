@@ -21,6 +21,7 @@ public class HandshakeHandler extends DefaultHandshakeHandler {
         WebSocketHandler wsHandler,
         Map<String, Object> attributes
     ) {
+
         return new StompPrincipal(UUID.randomUUID().toString());
     }
 

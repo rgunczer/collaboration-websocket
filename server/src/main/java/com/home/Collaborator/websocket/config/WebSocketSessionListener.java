@@ -10,19 +10,27 @@ import org.springframework.web.socket.messaging.SessionConnectEvent;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
-import com.home.Collaborator.websocket.domain.Client;
-import com.home.Collaborator.websocket.domain.ClientRepository;
+import com.home.Collaborator.websocket.domain.Collaborator;
+import com.home.Collaborator.websocket.domain.CollaboratorRepository;
+
+import com.home.Collaborator.websocket.domain.EditorRepository;
+
 
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.Message;
+// import org.springframework.messaging.Message;
 
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 public class WebSocketSessionListener {
 
     @Autowired
-    public ClientRepository clientRepository;
+    public CollaboratorRepository clientRepository;
+
+    @Autowired
+    public EditorRepository editorRepository;
 
     @Autowired
     public SimpMessagingTemplate messagingTemplate;
@@ -34,7 +42,7 @@ public class WebSocketSessionListener {
         // String username = headers.getUser().getName();
         // MessageHeaders headers = message.getHeaders();
         String sessionId = headers.getSessionId();
-        String username = getUsername(event.getMessage());
+        // String username = getUsername(event.getMessage());
         String nickName = "";
         String color = "#0000ff";
 
@@ -51,9 +59,9 @@ public class WebSocketSessionListener {
             System.out.println(nickName);
         }
 
-        var client = new Client(nickName, sessionId, color);
+        var client = new Collaborator(nickName, sessionId, color);
 
-        System.out.println("CONNECT: " + client);
+        log.info("CONNECT: " + client);
 
         messagingTemplate.convertAndSend("/topic/login", client);
 
@@ -82,22 +90,24 @@ public class WebSocketSessionListener {
 
 		var client = clientRepository.getClientBy(sessionId);
 		if (client != null) {
-            System.out.println("DISCONNECT: " + client);
+            log.info("DISCONNECT: " + client);
 
             messagingTemplate.convertAndSend("/topic/logout", client);
 
 			clientRepository.removeBy(event.getSessionId());
+
+            editorRepository.removeBy(client.getNick());
         }
     }
 
-    private String getUsername(Message<?> message) {
-        SimpMessageHeaderAccessor headers = SimpMessageHeaderAccessor.wrap(message);
-        var principal = headers.getUser();
-        if (principal != null) {
-            String username = principal.getName();
-            return username;
-        }
-        return "";
-    }
+    // private String getUsername(Message<?> message) {
+    //     SimpMessageHeaderAccessor headers = SimpMessageHeaderAccessor.wrap(message);
+    //     var principal = headers.getUser();
+    //     if (principal != null) {
+    //         String username = principal.getName();
+    //         return username;
+    //     }
+    //     return "";
+    // }
 
 }

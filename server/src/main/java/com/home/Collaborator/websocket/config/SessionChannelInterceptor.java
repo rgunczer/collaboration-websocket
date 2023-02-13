@@ -9,9 +9,6 @@ import org.springframework.messaging.support.ChannelInterceptor;
 
 public class SessionChannelInterceptor implements ChannelInterceptor {
 
-    int numberOfConnectedClients = 0;
-
-
     @Override
     @Nullable
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
