@@ -6,15 +6,17 @@ import java.util.Map;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.stereotype.Controller;
 
 import com.home.Collaborator.websocket.domain.FieldAction;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.home.Collaborator.websocket.domain.Collaborator;
 import com.home.Collaborator.websocket.domain.CollaboratorRepository;
 import com.home.Collaborator.websocket.domain.EditorRepository;
@@ -22,15 +24,18 @@ import com.home.Collaborator.websocket.domain.Editor;
 import com.home.Collaborator.websocket.domain.EditingEntityMessage;
 import com.home.Collaborator.websocket.domain.MouseMoveMessage;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+
+@Slf4j
+@RequiredArgsConstructor
 @Controller
 public class CollaborationController {
 
-    @Autowired
-    private CollaboratorRepository clientRepository;
-
-    @Autowired
-    private EditorRepository editorRepository;
+    private final ObjectMapper objectMapper;
+    private final CollaboratorRepository clientRepository;
+    private final EditorRepository editorRepository;
 
 
     @MessageMapping("/editing/{entityId}/mouse-moving")
@@ -44,44 +49,37 @@ public class CollaborationController {
         return message;
     }
 
-	@SubscribeMapping("/clients")
-	public Collection<Collaborator> getClients() {
-		return clientRepository.getClients().values();
-	}
+    @SubscribeMapping("/clients")
+    public Collection<Collaborator> getClients() {
+        return clientRepository.getClients().values();
+    }
 
-	@SubscribeMapping("/editing/{entityId}/editors")
-	public Collection<String> getClientsEditing(
-        @DestinationVariable("entityId") String entityId
-    ) {
-		var editor = editorRepository.getEditorBy(entityId);
-
-        if (editor != null) {
-            editor.getCollaboratorNames();
-        }
-        return Collections.emptyList();
-	}
-
-    @MessageMapping("/editing/{entityId}/enter")
-    @SendTo("/topic/editing/{entityId}/enter")
-    public Editor editingEntity(
+    @SubscribeMapping("/begin/{entityId}")
+    public Editor getEditorWithStatusAndCollaborators(
         @DestinationVariable("entityId") String entityId,
-        EditingEntityMessage message
-    ) {
+        SimpMessageHeaderAccessor accessor
+    ) throws Exception {
+        var jsonStr = accessor.getFirstNativeHeader("snapshot");
+        var snapshot = objectMapper.readValue(jsonStr, EditingEntityMessage.class);
+
         var editor = editorRepository.getEditorBy(entityId);
         if (editor == null) {
-            System.out.println("Nobody is editing this entity");
-
+            // based on snapshot create the editor
+            log.info("Nobody is editing this entity - adding you as the only collaborator");
             editor = new Editor();
-            editor.setDocumentId(entityId);
-            editor.getCollaboratorNames().add(message.getNick());
+            editor.getCollaboratorNames().add(snapshot.getNick()); //
 
-            for (var field: message.getFields()) {
+            editor.setDocumentId(entityId);
+
+            for (var field: snapshot.getFields()) {
                 editor.getDocumentFields().put(field.getName(), field);
             }
 
             editorRepository.add(entityId, editor);
         } else {
-            editor.getCollaboratorNames().add(message.getNick());
+            // ignore received snapshot as entity is already under editing
+            log.info("Entity is already under editing - adding you to list of collaborators");
+            editor.getCollaboratorNames().add(snapshot.getNick());
         }
 
         return editor;
