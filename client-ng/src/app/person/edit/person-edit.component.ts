@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { filter, fromEvent, sampleTime, Subject, takeUntil } from 'rxjs';
 import { Collaborator } from '@model/collaborator.model';
 import { FieldAction } from '@model/field-action.model';
 import { PersonService } from '@service/person.service';
-import { WsService } from '@service/ws.service';
+import { StompSubscription, WsService } from '@service/ws.service';
+import { Snapshot } from '@model/snapshot.model';
 
 
 @Component({
@@ -12,17 +13,22 @@ import { WsService } from '@service/ws.service';
   templateUrl: './person-edit.component.html',
   styleUrls: ['./person-edit.component.scss']
 })
-export class PersonEditComponent implements OnInit {
+export class PersonEditComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject();
   private entityId = '';
+
+  subMouseMoves: StompSubscription | undefined;
+  subJoiners: StompSubscription | undefined;
+  subLeavers: StompSubscription | undefined;
+  subFieldActions: StompSubscription | undefined;
 
   id!: string | null;
   name = "";
   age = 0;
 
   get nick(): string {
-    return this.ws.nickName;
+    return this.ws.nick;
   }
 
   nameOwner: Collaborator | null = null;
@@ -73,10 +79,9 @@ export class PersonEditComponent implements OnInit {
       return;
     }
 
-    const currentEntityStatus = {
+    const localSnapshot = {
       type: 'person',
       entity_id: this.id,
-      nick: this.ws.nickName,
       fields: [
         {
           name: 'name',
@@ -91,77 +96,79 @@ export class PersonEditComponent implements OnInit {
       ]
     };
 
-    this.ws.getCollaboratorsAndCurrentState(this.entityId, this.collaborators, currentEntityStatus)
-      .then((msg: any) => {
-        debugger;
+    this.ws.join(this.entityId, this.collaborators, localSnapshot)
+      .then((snapshot: Snapshot) => {
+        this.updateFieldsFromSnapshot(snapshot);
         this.listenToCollaboratorMouseMoves();
         this.listenToCollaboratorFieldActions();
+        this.listenToJoiners();
+        this.listenToLeavers();
         this.sendMouseMovements();
       });
   }
 
+  private updateFieldsFromSnapshot(snapshot: Snapshot): void {
+    let field = snapshot.fields['name'];
+    if (field) {
+      this.name = field.value;
+      const ownerName = field.owner;
+      this.nameOwner = this.collaborators.find(c => c.nick === ownerName) ?? null;
+    }
+
+    field = snapshot.fields['age'];
+    if (field) {
+      this.age = field.value;
+      const ownerName = field.owner;
+      this.nameOwner = this.collaborators.find(c => c.nick === ownerName) ?? null;
+    }
+  }
+
+  private listenToJoiners(): void {
+    this.subJoiners = this.ws.listenToJoiners(this.entityId, this.collaborators);
+  }
+
+  private listenToLeavers(): void {
+    this.subLeavers = this.ws.listenToLeavers(this.entityId, this.collaborators);
+  }
+
   private listenToCollaboratorMouseMoves(): void {
     console.log('listenToCollaboratorMouseMoves');
-
-    // this.ws.client?.subscribe(`/topic/editing/${this.entityId}/mouse-moving`, (message:any) => {
-    //   if (message.body) {
-    //     const msg = JSON.parse(message.body);
-
-    //     for(let i = 0; i < this.ws.collaborators.length; ++i) {
-    //       const collaborator = this.ws.collaborators[i];
-    //       if (collaborator.nick === msg.name) {
-    //         collaborator.mouseX = msg.mx;
-    //         collaborator.mouseY = msg.my;
-
-    //         break;
-    //       }
-    //     }
-
-    //   }
-    // });
+    this.subMouseMoves = this.ws.listenToMouseMoves(this.entityId, this.collaborators);
   }
 
   private listenToCollaboratorFieldActions(): void {
     console.log('listenToCollaboratorFieldActions');
 
-    // this.ws.client?.subscribe(`/topic/editing/${this.entityId}/field`, (message: any) => {
-    //   if (message.body) {
-    //     const msg: FieldAction = JSON.parse(message.body);
+    this.subFieldActions = this.ws.listenToFieldActions(this.entityId, (msg: FieldAction) => {
+      for (let i = 0; i < this.ws.collaborators.length; ++i) {
+        const collaborator = this.ws.collaborators[i];
+        if (collaborator.nick === msg.nick) {
+          if (msg.field === 'name') {
+            if (msg.type === 'focus') {
+              this.nameOwner = collaborator;
+            }
+            if (msg.type === 'blur' && this.nameOwner === collaborator) {
+              this.nameOwner = null;
+            }
+            if (msg.type === 'input' && this.nameOwner === collaborator) {
+              this.name = msg.value;
+            }
+          }
 
-    //     for (let i = 0; i < this.ws.collaborators.length; ++i) {
-    //       const collaborator = this.ws.collaborators[i];
-    //       if (collaborator.nick === msg.nick) {
-    //         if (msg.field === 'name') {
-    //           if (msg.type === 'focus') {
-    //             this.nameOwner = collaborator;
-    //           }
-    //           if (msg.type === 'blur' && this.nameOwner === collaborator) {
-    //             this.nameOwner = null;
-    //           }
-    //           if (msg.type === 'input' && this.nameOwner === collaborator) {
-    //             this.name = msg.value;
-    //           }
-    //         }
-
-    //         if (msg.field === 'age') {
-    //           if (msg.type === 'focus') {
-    //             this.ageOwner = collaborator;
-    //           }
-    //           if (msg.type === 'blur' && this.ageOwner === collaborator) {
-    //             this.ageOwner = null;
-    //           }
-    //           if (msg.type === 'input' && this.ageOwner === collaborator) {
-    //             this.age = parseInt(msg.value);
-    //           }
-    //         }
-
-
-    //       }
-    //     }
-
-    //   }
-    // });
-
+          if (msg.field === 'age') {
+            if (msg.type === 'focus') {
+              this.ageOwner = collaborator;
+            }
+            if (msg.type === 'blur' && this.ageOwner === collaborator) {
+              this.ageOwner = null;
+            }
+            if (msg.type === 'input' && this.ageOwner === collaborator) {
+              this.age = parseInt(msg.value);
+            }
+          }
+        }
+      }
+    });
   }
 
   private sendMouseMovements(): void {
@@ -179,8 +186,34 @@ export class PersonEditComponent implements OnInit {
   }
 
   ngOnDestroy(): void {
+    console.log('ngOnDestroy');
+
+    if (this.ws.isConnected) {
+      this.ws.sendLeave(this.entityId);
+    }
+
     this.destroy$.next(null);
     this.destroy$.complete();
+
+    if (this.subMouseMoves) {
+      this.subMouseMoves.unsubscribe();
+      this.subMouseMoves = undefined;
+    }
+
+    if (this.subJoiners) {
+      this.subJoiners.unsubscribe();
+      this.subJoiners = undefined;
+    }
+
+    if (this.subLeavers) {
+      this.subLeavers.unsubscribe();
+      this.subLeavers = undefined;
+    }
+
+    if (this.subFieldActions) {
+      this.subFieldActions.unsubscribe();
+      this.subFieldActions = undefined;
+    }
   }
 
   onFocus(event: any): void {

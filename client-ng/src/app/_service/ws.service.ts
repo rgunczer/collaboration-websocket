@@ -6,8 +6,13 @@ import * as Stomp from 'stompjs';
 
 import { calcTextColorFromBgColor } from 'src/utils';
 import { Collaborator } from '@model/collaborator.model';
+import { Snapshot } from '@model/snapshot.model';
+import { MouseMoveEvent } from '@model/mouse-move.model';
+import { Leave } from '@model/leave.model';
+import { FieldAction } from '@model/field-action.model';
 
 type CollaboratorEx = Collaborator & { color: string };
+export type StompSubscription = Stomp.Subscription;
 
 
 @Injectable({
@@ -16,25 +21,30 @@ type CollaboratorEx = Collaborator & { color: string };
 export class WsService {
 
   collaborators: Collaborator[] = [];
+  collaboratorsMap = new Map<string, Collaborator>();
 
   private events: Subject<string> = new Subject();
   private loginSub: Stomp.Subscription | undefined;
   private logoutSub: Stomp.Subscription | undefined;
   private clientsSub: Stomp.Subscription | undefined;
 
-  public nickName = '';
-  public client!: Stomp.Client | undefined;
+  private nickName = '';
+  private client!: Stomp.Client | undefined;
   private ws!: WebSocket | undefined;
 
-  public get isConnected(): boolean {
+  get isConnected(): boolean {
     return this.client ? this.client.connected : false;
   }
 
-  private calcUrl(): string {
-    return 'ws://localhost:8080/ws';
+  get nick(): string {
+    return this.nickName;
   }
 
-  public connect(nickName: string, nickColor: string): void {
+  getOnEvents$(): Observable<any> {
+    return this.events.asObservable();
+  }
+
+  connect(nickName: string, nickColor: string): void {
     this.nickName = nickName;
     this.collaborators = [];
 
@@ -58,7 +68,7 @@ export class WsService {
     }
   }
 
-  public disconnect() {
+  disconnect() {
     if (this.ws) {
       this.client?.disconnect(this.disconnectCallback, {});
     }
@@ -71,7 +81,7 @@ export class WsService {
 
     this.loginSub = this.client?.subscribe('/topic/login', this.loginCallback);
     this.logoutSub = this.client?.subscribe('/topic/logout', this.logoutCallback);
-    this.clientsSub = this.client?.subscribe('/app/clients', this.clientsCallback);
+    this.clientsSub = this.client?.subscribe('/app/collaborators', this.clientsCallback);
   }
 
   connectError = (error) => {
@@ -100,6 +110,7 @@ export class WsService {
     this.preProcessCollaborator(collaborator);
     this.collaborators.push(collaborator);
     this.sortCollaboratorsByTime(this.collaborators);
+    this.fillCollaboratorsMap(this.collaborators);
   }
 
   logoutCallback = (message: Stomp.Frame) => {
@@ -109,7 +120,9 @@ export class WsService {
     const index = this.collaborators.findIndex(x => x.sessionId === collaborator.sessionId);
     if (index !== -1) {
       this.collaborators.splice(index, 1);
+      this.collaboratorsMap.delete(collaborator.nick);
       this.sortCollaboratorsByTime(this.collaborators);
+      this.fillCollaboratorsMap(this.collaborators);
     }
   }
 
@@ -121,29 +134,22 @@ export class WsService {
 
     this.collaborators = collaborators;
     this.sortCollaboratorsByTime(this.collaborators);
-  }
-
-  getOnEvents$(): Observable<any> {
-    return this.events.asObservable();
-  }
-
-  private sendMessage(path: string, obj: any): void {
-    this.client?.send(path, {}, JSON.stringify(obj));
+    this.fillCollaboratorsMap(this.collaborators);
   }
 
   sendMouseMovement(entityId: string, event: MouseEvent): void {
-    this.sendMessage(
+    this.send(
       `/app/editing/${entityId}/mouse-moving`,
       {
-        name: this.nickName,
-        mx: event.clientX, // TODO: calc proper pos based on scroll etc.
-        my: event.clientY
+        nick: this.nickName,
+        x: event.clientX, // TODO: calc proper pos based on scroll etc.
+        y: event.clientY
       }
     );
   }
 
   sendFieldInput(entityId: string, fieldName: string, fieldValue: any): void {
-    this.sendMessage(
+    this.send(
       `/app/editing/${entityId}/field`,
       {
         type: 'input',
@@ -155,7 +161,7 @@ export class WsService {
   }
 
   sendFieldFocus(entityId: string, fieldName: string): void {
-    this.sendMessage(
+    this.send(
       `/app/editing/${entityId}/field`,
       {
         type: 'focus',
@@ -167,7 +173,7 @@ export class WsService {
   }
 
   sendFieldBlur(entityId: string, fieldName: string): void {
-    this.sendMessage(
+    this.send(
       `/app/editing/${entityId}/field`,
       {
         type: 'blur',
@@ -178,11 +184,21 @@ export class WsService {
     );
   }
 
-  getCollaboratorsAndCurrentState(
+  sendLeave(entityId: string): void {
+    this.send(
+      `/app/editing/${entityId}/leave`,
+      {
+        nick: this.nickName
+      }
+    );
+  }
+
+  join(
     entityId: string,
     collaboratorsOnThisEntity: Collaborator[],
-    currentEntityStatus: any
+    localSnapshot: any
   ): Promise<any> {
+    localSnapshot.nick = this.nickName;
     collaboratorsOnThisEntity.length = 0;
     return new Promise(
       (resolve, reject) => {
@@ -190,22 +206,20 @@ export class WsService {
         const sub = this.client?.subscribe(
           `/app/begin/${entityId}`,
           (frame: Stomp.Frame) => {
-            const msg = JSON.parse(frame.body);
-
-            debugger;
+            const receivedSnapshot: Snapshot = JSON.parse(frame.body);
 
             this.collaborators.forEach(c => {
-              if (msg.collaboratorNames.includes(c.nick)) {
+              if (receivedSnapshot.collaboratorNames.includes(c.nick)) {
                 collaboratorsOnThisEntity.push(c);
               }
             });
 
             sub?.unsubscribe();
 
-            resolve({ msg });
+            resolve(receivedSnapshot);
           },
           {
-            snapshot: JSON.stringify(currentEntityStatus)
+            snapshot: JSON.stringify(localSnapshot)
           }
         );
 
@@ -213,6 +227,59 @@ export class WsService {
     );
   }
 
+  listenToMouseMoves(entityId: string, collaborators: Collaborator[]): Stomp.Subscription | undefined {
+    return this.client?.subscribe(
+      `/topic/editing/${entityId}/mouse-moving`,
+      (frame: Stomp.Frame) => {
+        const msg: MouseMoveEvent = JSON.parse(frame.body);
+
+        const collaborator = this.collaboratorsMap.get(msg.nick);
+        if (collaborator) {
+          collaborator.mouseX = msg.x;
+          collaborator.mouseY = msg.y;
+        }
+      }
+    );
+  }
+
+  listenToJoiners(entityId: string, collaborators: Collaborator[]): Stomp.Subscription | undefined {
+    return this.client?.subscribe(
+      `/topic/${entityId}/joiner`,
+      (frame: Stomp.Frame) => {
+        const newJoiner = this.collaboratorsMap.get(frame.body);
+        if (newJoiner) {
+          collaborators.push(newJoiner);
+        }
+      }
+    );
+  }
+
+  listenToLeavers(entityId: string, collaborators: Collaborator[]): Stomp.Subscription | undefined {
+    return this.client?.subscribe(
+      `/topic/editing/${entityId}/leave`,
+      (frame: Stomp.Frame) => {
+        const leave: Leave = JSON.parse(frame.body);
+        const index = collaborators.findIndex(c => c.nick === leave.nick);
+        if (index !== -1) {
+          collaborators.splice(index, 1);
+        }
+      }
+    );
+  }
+
+  listenToFieldActions(entityId: string, callbackFn: Function): Stomp.Subscription | undefined {
+    return this.client?.subscribe(
+      `/topic/editing/${entityId}/field`,
+      (frame: Stomp.Frame) => {
+        const fieldAction: FieldAction = JSON.parse(frame.body);
+        callbackFn(fieldAction);
+      }
+    );
+  }
+
+  private send(path: string, obj: any): void {
+    this.client?.send(path, {}, JSON.stringify(obj));
+  }
 
   private preProcessCollaborator(c: CollaboratorEx): void {
     c.bgColor = c.color;
@@ -222,6 +289,17 @@ export class WsService {
 
   private sortCollaboratorsByTime(collaborators: Collaborator[]): void {
     collaborators.sort((a, b) => a.time.getTime() - b.time.getTime());
+  }
+
+  private fillCollaboratorsMap(collaborators: Collaborator[]): void {
+    this.collaboratorsMap.clear();
+    this.collaborators.forEach(c => {
+      this.collaboratorsMap.set(c.nick, c);
+    });
+  }
+
+  private calcUrl(): string {
+    return 'ws://localhost:8080/ws';
   }
 
 }

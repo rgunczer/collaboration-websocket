@@ -1,4 +1,4 @@
-package com.home.Collaborator.websocket.domain;
+package com.home.Collaborator.websocket.snapshot;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,8 +14,8 @@ import lombok.ToString;
 @AllArgsConstructor
 public class Field {
 
-	private String name;
-	private String value;
-	private String owner;
+    private String name;
+    private String value;
+    private String owner;
 
 }
