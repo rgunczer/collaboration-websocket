@@ -5,6 +5,7 @@ import { filter, fromEvent, sampleTime, Subject, takeUntil } from 'rxjs';
 import { Collaborator } from '@model/collaborator.model';
 import { FieldAction } from '@model/field-action.model';
 import { PersonService } from '@service/person.service';
+import { CityService } from '@service/city.service';
 import { StompSubscription, WsService } from '@service/ws.service';
 import { Snapshot } from '@model/snapshot.model';
 
@@ -32,21 +33,25 @@ export class PersonEditComponent implements OnInit, OnDestroy {
 
   nameOwner: Collaborator | null = null;
   ageOwner: Collaborator | null = null;
+  cityOwner: Collaborator | null = null;
 
   collaborators: Collaborator[] = [];
 
   frm = this.fb.group({
     name: [''],
     age: [0],
-    city: [''],
+    city: [0],
   });
+
+  cities = this.svcCity.getCities();
 
 
   constructor(
     private route: ActivatedRoute,
     private fb: FormBuilder,
     private ws: WsService,
-    public svc: PersonService
+    public svcPerson: PersonService,
+    public svcCity: CityService,
   ) {
 
   }
@@ -64,16 +69,46 @@ export class PersonEditComponent implements OnInit, OnDestroy {
   private load(id: number): void {
     console.log('load [' + id + ']');
 
-    const person = this.svc.getPersonById(id);
+    const person = this.svcPerson.getPersonById(id);
     if (person) {
 
       this.frm.setValue({
         name: person.name,
         age: person.age,
-        city: 'New York'
+        city: person.city,
       });
 
       this.entityId = 'edit|' + id;
+
+      this.frm.get('name')?.valueChanges
+        .pipe(
+          takeUntil(this.destroy$)
+        )
+        .subscribe(
+          value => {
+            console.log('value changes [name]: ', value);
+          }
+        );
+
+      this.frm.get('age')?.valueChanges
+        .pipe(
+          takeUntil(this.destroy$)
+        )
+        .subscribe(
+          value => {
+            console.log('value changes [age]: ', value);
+          }
+        );
+
+      this.frm.get('city')?.valueChanges
+        .pipe(
+          takeUntil(this.destroy$)
+        )
+        .subscribe(
+          value => {
+            console.log('value changes [city]: ', value);
+          }
+        );
 
       setTimeout(() => this.beginCollaboration());
     } else {

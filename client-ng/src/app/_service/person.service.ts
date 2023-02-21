@@ -11,17 +11,20 @@ export class PersonService {
     {
       id: 1,
       name: 'Micah',
-      age: 42
+      age: 42,
+      city: 1,
     },
     {
       id: 2,
       name: 'Arthur',
-      age: 44
+      age: 44,
+      city: 3,
     },
     {
       id: 3,
       name: 'Bill',
-      age: 39
+      age: 39,
+      city: 1,
     }
   ];
 
