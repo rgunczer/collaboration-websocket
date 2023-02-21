@@ -60,7 +60,7 @@ public class SessionListener {
 
     @EventListener
     public void disconnect(SessionDisconnectEvent event) {
-        log.info("connect");
+        log.info("disconnect");
 
         var sessionId = event.getSessionId();
 
