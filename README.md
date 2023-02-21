@@ -1,2 +1,3 @@
-# collaboration-websocket
-Multi user collaboration over websocket with Spring Boot using STOMP
+# Real-Time Collaboration using WebSocket with STOMP
+- Spring Boot backend
+- Angular frontend
