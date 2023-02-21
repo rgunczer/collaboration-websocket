@@ -87,6 +87,12 @@ export class PersonEditComponent implements OnInit, OnDestroy {
         .subscribe(
           value => {
             console.log('value changes [name]: ', value);
+
+            this.ws.sendFieldInput(
+              this.entityId,
+              'name',
+              value,
+            );
           }
         );
 
@@ -97,6 +103,12 @@ export class PersonEditComponent implements OnInit, OnDestroy {
         .subscribe(
           value => {
             console.log('value changes [age]: ', value);
+
+            this.ws.sendFieldInput(
+              this.entityId,
+              'age',
+              value,
+            );
           }
         );
 
@@ -107,6 +119,12 @@ export class PersonEditComponent implements OnInit, OnDestroy {
         .subscribe(
           value => {
             console.log('value changes [city]: ', value);
+
+            this.ws.sendFieldInput(
+              this.entityId,
+              'city',
+              value,
+            );
           }
         );
 
@@ -211,6 +229,18 @@ export class PersonEditComponent implements OnInit, OnDestroy {
               this.frm.get('age')?.setValue(parseInt(msg.value), { emitEvent: false });
             }
           }
+
+          if (msg.field === 'city') {
+            if (msg.type === 'focus') {
+              this.cityOwner = collaborator;
+            }
+            if (msg.type === 'blur' && this.cityOwner === collaborator) {
+              this.cityOwner = null;
+            }
+            if (msg.type === 'input' && this.cityOwner === collaborator) {
+              this.frm.get('city')?.setValue(parseInt(msg.value), { emitEvent: false });
+            }
+          }
         }
       }
     });
@@ -262,11 +292,15 @@ export class PersonEditComponent implements OnInit, OnDestroy {
   }
 
   onFocus(event: any): void {
+    console.log('onFocus');
+
     const fieldName = event.target.name;
     this.ws.sendFieldFocus(this.entityId, fieldName);
   }
 
   onBlur(event): void {
+    console.log('onBlur');
+
     const fieldName = event.target.name;
     this.ws.sendFieldBlur(this.entityId, fieldName);
   }

@@ -65,19 +65,15 @@
         <td>City: </td>
         <td>
           <app-collaborator-field-owner [owner]="cityOwner" />
-          <select formControlName="city">
-            <option [ngValue]="0">Choose City</option>
-            <option *ngFor="let city of cities" [ngValue]="city.id">{{city.name}}</option>
-        </select>
-
-          <!-- <input
-            type="number"
-            name="age"
-            [ngStyle]="{ 'border-color': cityOwner ? cityOwner.bgColor : '#ccc' }"
+          <select
+            name="city"
             formControlName="city"
             (focus)="onFocus($event)"
             (blur)="onBlur($event)"
-          > -->
+          >
+            <option [ngValue]="0">Choose City</option>
+            <option *ngFor="let city of cities" [ngValue]="city.id">{{city.name}}</option>
+          </select>
         </td>
       </tr>
 
