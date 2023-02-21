@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { FormBuilder } from '@angular/forms';
 import { filter, fromEvent, sampleTime, Subject, takeUntil } from 'rxjs';
 import { Collaborator } from '@model/collaborator.model';
 import { FieldAction } from '@model/field-action.model';
@@ -24,8 +25,6 @@ export class PersonEditComponent implements OnInit, OnDestroy {
   subFieldActions: StompSubscription | undefined;
 
   id!: string | null;
-  name = "";
-  age = 0;
 
   get nick(): string {
     return this.ws.nick;
@@ -36,9 +35,16 @@ export class PersonEditComponent implements OnInit, OnDestroy {
 
   collaborators: Collaborator[] = [];
 
+  frm = this.fb.group({
+    name: [''],
+    age: [0],
+    city: [''],
+  });
+
 
   constructor(
     private route: ActivatedRoute,
+    private fb: FormBuilder,
     private ws: WsService,
     public svc: PersonService
   ) {
@@ -60,8 +66,12 @@ export class PersonEditComponent implements OnInit, OnDestroy {
 
     const person = this.svc.getPersonById(id);
     if (person) {
-      this.name = person.name;
-      this.age = person.age;
+
+      this.frm.setValue({
+        name: person.name,
+        age: person.age,
+        city: 'New York'
+      });
 
       this.entityId = 'edit|' + id;
 
@@ -85,12 +95,12 @@ export class PersonEditComponent implements OnInit, OnDestroy {
       fields: [
         {
           name: 'name',
-          value: this.name,
+          value: this.frm.get('name')?.value,
           owner: '-'
         },
         {
           name: 'age',
-          value: this.age,
+          value: this.frm.get('age')?.value,
           owner: '-'
         }
       ]
@@ -110,14 +120,14 @@ export class PersonEditComponent implements OnInit, OnDestroy {
   private updateFieldsFromSnapshot(snapshot: Snapshot): void {
     let field = snapshot.fields['name'];
     if (field) {
-      this.name = field.value;
+      this.frm.get('name')?.setValue(field.value);
       const ownerName = field.owner;
       this.nameOwner = this.collaborators.find(c => c.nick === ownerName) ?? null;
     }
 
     field = snapshot.fields['age'];
     if (field) {
-      this.age = field.value;
+      this.frm.get('age')?.setValue(field.value);
       const ownerName = field.owner;
       this.nameOwner = this.collaborators.find(c => c.nick === ownerName) ?? null;
     }
@@ -151,7 +161,7 @@ export class PersonEditComponent implements OnInit, OnDestroy {
               this.nameOwner = null;
             }
             if (msg.type === 'input' && this.nameOwner === collaborator) {
-              this.name = msg.value;
+              this.frm.get('name')?.setValue(msg.value, { emitEvent: false });
             }
           }
 
@@ -163,7 +173,7 @@ export class PersonEditComponent implements OnInit, OnDestroy {
               this.ageOwner = null;
             }
             if (msg.type === 'input' && this.ageOwner === collaborator) {
-              this.age = parseInt(msg.value);
+              this.frm.get('age')?.setValue(parseInt(msg.value), { emitEvent: false });
             }
           }
         }
@@ -235,6 +245,12 @@ export class PersonEditComponent implements OnInit, OnDestroy {
       elementName,
       text,
     );
+  }
+
+  onSubmit(): void {
+    console.log('onSubmit');
+
+    console.warn(this.frm.value);
   }
 
 }

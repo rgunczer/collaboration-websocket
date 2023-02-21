@@ -19,33 +19,56 @@
   <app-collaborator-pointer *ngIf="c.nick !== nick" [c]="c" [tx]="c.mouseX" [ty]="c.mouseY" />
 </ng-container>
 
-<table border="1">
-  <thead>
-    <tr>
-      <th>Field</th>
-      <th>Value</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Id: </td>
-      <td>{{id}}</td>
-    </tr>
-    <tr>
-      <td>Name: </td>
-      <td>
-        <app-collaborator-field-owner [owner]="nameOwner" />
-        <input type="text" name="name" [(ngModel)]="name" (focus)="onFocus($event)" (blur)="onBlur($event)"
-          (input)="onInput($event)">
-      </td>
-    </tr>
-    <tr>
-      <td>Age: </td>
-      <td>
-        <app-collaborator-field-owner [owner]="ageOwner" />
-        <input type="number" name="age" [ngStyle]="{ 'border-color': ageOwner ? ageOwner.bgColor : '#ccc' }"
-          [(ngModel)]="age" (focus)="onFocus($event)" (blur)="onBlur($event)" (input)="onInput($event)">
-      </td>
-    </tr>
-  </tbody>
-</table>
+<form [formGroup]="frm" (ngSubmit)="onSubmit()">
+
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Field</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Id: </td>
+        <td>{{id}}</td>
+      </tr>
+      <tr>
+        <td>Name: </td>
+        <td>
+          <app-collaborator-field-owner [owner]="nameOwner" />
+          <input
+            type="text"
+            name="name"
+            formControlName="name"
+            (input)="onInput($event)"
+            (focus)="onFocus($event)"
+            (blur)="onBlur($event)"
+          >
+        </td>
+      </tr>
+      <tr>
+        <td>Age: </td>
+        <td>
+          <app-collaborator-field-owner [owner]="ageOwner" />
+          <input
+            type="number"
+            name="age"
+            [ngStyle]="{ 'border-color': ageOwner ? ageOwner.bgColor : '#ccc' }"
+            formControlName="age"
+            (focus)="onFocus($event)"
+            (blur)="onBlur($event)"
+          >
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <button type="submit" [disabled]="!frm.valid">Submit</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</form>
+
+<pre>value: {{ frm.value | json }}</pre>
